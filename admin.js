@@ -75,13 +75,19 @@ async function startDashboard() {
 async function fetchCloudData() {
     if (!_supaAdmin) return null;
     try {
-        const { data, error } = await _supaAdmin
-            .from('wedding_invitations')
-            .select('*')
-            .eq('client_id', CLIENT_ID)
-            .maybeSingle();
+        // Ambil data Undangan, Tamu, dan Ucapan secara PARALEL (jauh lebih cepat)
+        const [invRes, guestsRes, wishesRes] = await Promise.all([
+            _supaAdmin.from('wedding_invitations').select('*').eq('client_id', CLIENT_ID).maybeSingle(),
+            _supaAdmin.from('guests').select('*').eq('client_id', CLIENT_ID).order('id', { ascending: false }),
+            _supaAdmin.from('wishes').select('*').eq('client_id', CLIENT_ID).order('created_at', { ascending: false })
+        ]);
 
-        if (!data) {
+        const invData = invRes.data;
+        const invError = invRes.error;
+        const guestsData = guestsRes.data;
+        const wishesData = wishesRes.data;
+
+        if (!invData) {
             // Klien baru! Buat baris kosong di database
             console.warn(`[ADMIN] Klien "${CLIENT_ID}" belum ada. Membuat baris baru...`);
             const { error: insertErr } = await _supaAdmin.from('wedding_invitations').insert({
@@ -93,12 +99,21 @@ async function fetchCloudData() {
             return null;
         }
 
-        if (!error && data) {
-            localStore.settings = data.settings;
-            localStore.guests = data.guests;
-            localStore.wishes = data.wishes;
-            localStore.gallery = data.gallery;
-            localStore.story = data.story;
+        if (!invError && invData) {
+            localStore.settings = invData.settings;
+            localStore.gallery = invData.gallery;
+            localStore.story = invData.story;
+
+            // Map data tamu & ucapan ke localStore agar UI tidak berubah
+            localStore.guests = guestsData || [];
+            localStore.wishes = (wishesData || []).map(w => ({
+                id: w.id,
+                name: w.name,
+                attendance: w.attendance,
+                guests: w.guest_count,
+                message: w.message,
+                timestamp: w.created_at
+            }));
             
             // Selalu update domain_origin setiap admin dibuka
             _supaAdmin.from('wedding_invitations')
@@ -108,7 +123,7 @@ async function fetchCloudData() {
                     if (domErr) console.warn('[ADMIN] Gagal update domain_origin:', domErr.message);
                 });
 
-            return data;
+            return invData;
         }
     } catch (err) {
         console.error('[ADMIN] Gagal fetch data:', err);
@@ -231,10 +246,14 @@ function getData(key) {
 
 function setData(key, data) {
     const colName = DB_MAP[key];
-    localStore[colName] = data; // Update UI langsung (Optimistic UI)
+    localStore[colName] = data; // Update UI langsung
 
     // Push ke Supabase di belakang layar
     if (_supaAdmin) {
+        // Jika yang diupdate adalah GUESTS atau WISHES, kita abaikan sinkronisasi JSONB
+        // karena sudah ditangani oleh fungsi spesifik (add/delete)
+        if (colName === 'guests' || colName === 'wishes') return;
+
         _supaAdmin.from('wedding_invitations')
             .update({ [colName]: data })
             .eq('client_id', CLIENT_ID)
@@ -557,7 +576,7 @@ function initGuestManagement() {
     loadGuestTable();
 }
 
-function addGuest() {
+async function addGuest() {
     const nameInput = document.getElementById('addGuestName');
     const phoneInput = document.getElementById('addGuestPhone');
     const name = nameInput.value.trim();
@@ -569,29 +588,49 @@ function addGuest() {
         return;
     }
 
-    const guests = getData(KEYS.GUESTS) || [];
-    guests.push({
-        id: Date.now(),
-        name,
-        phone,
-        createdAt: new Date().toISOString(),
-    });
+    if (_supaAdmin) {
+        showToast('Menyimpan tamu...');
+        const { data, error } = await _supaAdmin
+            .from('guests')
+            .insert({
+                client_id: CLIENT_ID,
+                name: name,
+                phone: phone
+            })
+            .select()
+            .single();
 
-    setData(KEYS.GUESTS, guests);
-    nameInput.value = '';
-    phoneInput.value = '';
-    nameInput.focus();
-    loadGuestTable();
-    showToast(`✅ Tamu "${name}" berhasil ditambahkan!`);
+        if (!error && data) {
+            localStore.guests.unshift(data);
+            nameInput.value = '';
+            phoneInput.value = '';
+            nameInput.focus();
+            loadGuestTable();
+            showToast(`✅ Tamu "${name}" berhasil ditambahkan!`);
+        } else {
+            console.error('Gagal tambah tamu:', error);
+            showToast('❌ Gagal sinkron ke Cloud');
+        }
+    }
 }
 
-function deleteGuest(id) {
+async function deleteGuest(id) {
     if (!confirm('Yakin ingin menghapus tamu ini?')) return;
-    let guests = getData(KEYS.GUESTS) || [];
-    guests = guests.filter(g => g.id !== id);
-    setData(KEYS.GUESTS, guests);
-    loadGuestTable();
-    showToast('🗑️ Tamu berhasil dihapus');
+    
+    if (_supaAdmin) {
+        const { error } = await _supaAdmin
+            .from('guests')
+            .delete()
+            .eq('id', id);
+
+        if (!error) {
+            localStore.guests = localStore.guests.filter(g => g.id !== id);
+            loadGuestTable();
+            showToast('🗑️ Tamu berhasil dihapus');
+        } else {
+            showToast('❌ Gagal menghapus di Cloud');
+        }
+    }
 }
 
 function loadGuestTable() {
@@ -874,13 +913,23 @@ function loadWishesAdmin() {
     }).join('');
 }
 
-window.deleteWish = function (id) {
+window.deleteWish = async function (id) {
     if (!confirm('Hapus ucapan ini?')) return;
-    let wishes = getData(KEYS.WISHES) || [];
-    wishes = wishes.filter(w => w.id !== id);
-    setData(KEYS.WISHES, wishes);
-    loadWishesAdmin();
-    showToast('🗑️ Ucapan berhasil dihapus');
+
+    if (_supaAdmin) {
+        const { error } = await _supaAdmin
+            .from('wishes')
+            .delete()
+            .eq('id', id);
+
+        if (!error) {
+            localStore.wishes = localStore.wishes.filter(w => w.id !== id);
+            loadWishesAdmin();
+            showToast('🗑️ Ucapan berhasil dihapus');
+        } else {
+            showToast('❌ Gagal menghapus di Cloud');
+        }
+    }
 };
 
 /* =========================================

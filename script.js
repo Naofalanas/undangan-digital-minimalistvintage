@@ -38,27 +38,39 @@ function initSupabase() {
 async function fetchCloudData() {
     if (!_supa) return;
     try {
-        const { data, error } = await _supa
-            .from('wedding_invitations')
-            .select('*')
-            .eq('client_id', CLIENT_ID)
-            .maybeSingle();
+        const [invRes, wishesRes] = await Promise.all([
+            _supa.from('wedding_invitations').select('*').eq('client_id', CLIENT_ID).maybeSingle(),
+            _supa.from('wishes').select('*').eq('client_id', CLIENT_ID).order('created_at', { ascending: false })
+        ]);
+
+        const data = invRes.data;
+        const error = invRes.error;
+        const wishesData = wishesRes.data;
 
         if (!error && data) {
             if (data.settings) localStorage.setItem('wedding_settings', JSON.stringify(data.settings));
             if (data.gallery) localStorage.setItem('wedding_gallery', JSON.stringify(data.gallery));
             if (data.story) localStorage.setItem('wedding_story', JSON.stringify(data.story));
-            if (data.wishes) localStorage.setItem('wedding_wishes', JSON.stringify(data.wishes));
+            
+            // Map wishes dari tabel baru ke localStorage agar UI tetap jalan
+            if (wishesData) {
+                const mappedWishes = wishesData.map(w => ({
+                    id: w.id,
+                    name: w.name,
+                    attendance: w.attendance,
+                    guests: w.guest_count,
+                    message: w.message,
+                    timestamp: w.created_at
+                }));
+                localStorage.setItem('wedding_wishes', JSON.stringify(mappedWishes));
+            }
 
-            // Rekam domain asal undangan saat tamu membuka halaman ini
-            // Ini fallback jika admin belum pernah login untuk klien ini
+            // Rekam domain asal undangan
             if (!data.domain_origin) {
                 _supa.from('wedding_invitations')
                     .update({ domain_origin: window.location.origin })
                     .eq('client_id', CLIENT_ID)
-                    .then(({ error: domErr }) => {
-                        if (domErr) console.warn('[SCRIPT] Gagal update domain_origin:', domErr.message);
-                    });
+                    .then();
             }
         }
     } catch (err) {
@@ -668,21 +680,19 @@ function createPetals() {
 async function pushWishToCloud(newWish) {
     if (!_supa) return;
     try {
-        const { data, error } = await _supa
-            .from('wedding_invitations')
-            .select('wishes')
-            .eq('client_id', CLIENT_ID)
-            .maybeSingle();
-
-        let latestWishes = [];
-        if (data && data.wishes) latestWishes = data.wishes;
-
-        latestWishes.unshift(newWish);
-
+        // Langsung insert satu baris ke tabel wishes (Relational)
+        // Ini menghindari Race Condition jika banyak tamu input bersamaan
         await _supa
-            .from('wedding_invitations')
-            .update({ wishes: latestWishes })
-            .eq('client_id', CLIENT_ID);
+            .from('wishes')
+            .insert({
+                client_id: CLIENT_ID,
+                name: newWish.name,
+                attendance: newWish.attendance,
+                guest_count: newWish.guests,
+                message: newWish.message
+            });
+            
+        console.log('[SUPABASE] Ucapan berhasil dikirim ke tabel relational.');
     } catch (err) {
         console.error('Error pushing wish:', err);
     }
