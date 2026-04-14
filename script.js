@@ -330,7 +330,6 @@ function playMusic() {
     const musicBtn = document.getElementById('musicToggle');
     if (!audio) return;
 
-    // Ambil URL lagu custom dari admin (tersimpan di localStorage via Supabase fetch)
     let settings;
     try { settings = JSON.parse(localStorage.getItem('wedding_settings')); } catch { settings = null; }
 
@@ -339,13 +338,11 @@ function playMusic() {
         : null;
 
     if (customUrl) {
-        // Ganti ke lagu custom
+        // Set src baru — ini otomatis trigger load di belakang layar
+        // JANGAN panggil audio.load() manual, karena itu akan membatalkan play()
         audio.src = customUrl;
-        audio.load(); // Reset state audio element
     }
 
-    // play() handle buffering secara internal via Promise
-    // Tidak perlu canplay event — ini cara paling reliable
     audio.play()
         .then(() => {
             isPlaying = true;
