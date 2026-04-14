@@ -347,16 +347,14 @@ a {
    ========================================= */
 #mainContent {
     opacity: 0;
-    transition: opacity 0.8s ease 0.3s;
-    
-    /* Horizontal Storytelling Styles */
     display: flex;
     flex-direction: row;
     width: 100vw;
     height: 100vh;
     height: 100dvh;
-    transition: transform 1s cubic-bezier(0.65, 0, 0.35, 1);
-    will-change: transform;
+    overflow: hidden; /* Prevent horizontal layout from breaking mobile viewport */
+    transition: opacity 0.8s ease 0.3s, transform 1s cubic-bezier(0.65, 0, 0.35, 1);
+    will-change: transform, opacity;
 }
 
 #mainContent::-webkit-scrollbar {
