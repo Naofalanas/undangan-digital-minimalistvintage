@@ -177,6 +177,15 @@ function applyDynamicSettings() {
 
     // --- Page Title ---
     document.title = `Undangan Pernikahan — ${coupleShort}`;
+
+    // --- Background Music ---
+    if (settings.musicUrl) {
+        const audio = document.getElementById('bgMusic');
+        if (audio) {
+            audio.src = settings.musicUrl;
+            audio.load(); // Load the new source
+        }
+    }
 }
 
 /* -----------------------------------------
