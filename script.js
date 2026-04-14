@@ -179,11 +179,12 @@ function applyDynamicSettings() {
     document.title = `Undangan Pernikahan — ${coupleShort}`;
 
     // --- Background Music ---
-    if (settings.musicUrl) {
+    // Pre-set src dari settings agar saat user klik tombol Buka, sumber sudah terpasang
+    if (settings.musicUrl && settings.musicUrl.trim().startsWith('http')) {
         const audio = document.getElementById('bgMusic');
         if (audio) {
-            audio.src = settings.musicUrl;
-            audio.load(); // Load the new source
+            audio.src = settings.musicUrl.trim();
+            // Jangan load() di sini, biar playMusic() yang handle saat user klik
         }
     }
 }
@@ -336,15 +337,40 @@ let isPlaying = false;
 
 function playMusic() {
     const audio = document.getElementById('bgMusic');
+    const musicBtn = document.getElementById('musicToggle');
     if (!audio) return;
 
-    audio.play().then(() => {
-        isPlaying = true;
-        document.getElementById('musicToggle').classList.add('playing');
-    }).catch(() => {
-        // Autoplay blocked — user can toggle manually
-        isPlaying = false;
-    });
+    // Ambil musicUrl dari settings Supabase (via localStorage)
+    let settings;
+    try { settings = JSON.parse(localStorage.getItem('wedding_settings')); } catch { settings = null; }
+    
+    const customUrl = settings && settings.musicUrl && settings.musicUrl.trim().startsWith('http')
+        ? settings.musicUrl.trim()
+        : null;
+
+    if (customUrl && audio.getAttribute('data-loaded-src') !== customUrl) {
+        // Sumber baru: harus load() dulu sebelum play()
+        audio.src = customUrl;
+        audio.setAttribute('data-loaded-src', customUrl);
+        audio.load();
+        audio.addEventListener('canplay', () => {
+            audio.play().then(() => {
+                isPlaying = true;
+                if (musicBtn) musicBtn.classList.add('playing');
+            }).catch((err) => {
+                console.warn('[MUSIC] Gagal play setelah load:', err);
+            });
+        }, { once: true });
+    } else {
+        // Sumber sama / default HTML — langsung play
+        audio.play().then(() => {
+            isPlaying = true;
+            if (musicBtn) musicBtn.classList.add('playing');
+        }).catch((err) => {
+            console.warn('[MUSIC] Playback gagal:', err);
+            isPlaying = false;
+        });
+    }
 }
 
 function initMusicToggle() {
