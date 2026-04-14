@@ -14,6 +14,28 @@
     <link rel="stylesheet" href="admin.css">
 </head>
 <body>
+ 
+    <!-- ============================
+         LOGIN OVERLAY (Security Layer)
+         ============================ -->
+    <div class="login-overlay" id="loginOverlay">
+        <div class="login-box">
+            <div class="login-header">
+                <div class="sidebar-logo">Undangan<span>Digital</span></div>
+                <h2 id="loginTitle">Dashboard Terkunci</h2>
+                <p id="loginSubtitle">Silakan masukkan password untuk mengakses dashboard ini.</p>
+            </div>
+            <div class="login-body">
+                <div class="form-group">
+                    <input type="password" class="form-input" id="adminPasswordInput" placeholder="Masukkan password...">
+                </div>
+                <button class="btn btn-primary" id="btnLoginAdmin" style="width:100%; margin-top:16px; height:44px;">Buka Dashboard</button>
+            </div>
+            <div class="login-footer">
+                <p>Khusus admin client: <span id="loginClientIdDisplay"></span></p>
+            </div>
+        </div>
+    </div>
 
     <!-- MOBILE SIDEBAR TOGGLE -->
     <button class="sidebar-toggle" id="sidebarToggle" aria-label="Toggle Menu">☰</button>

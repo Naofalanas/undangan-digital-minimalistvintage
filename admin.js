@@ -26,32 +26,38 @@ document.addEventListener('DOMContentLoaded', async () => {
     initSidebar();
 
     // --- Fix #1: Ambil CLIENT_ID dari URL SEBELUM try-catch ---
-    // Agar link preview & semua fitur tetap pakai ID yang benar
-    // meski Supabase gagal load atau SDK tidak tersedia
     const urlParams = new URLSearchParams(window.location.search);
     CLIENT_ID = urlParams.get('id') || 'demo-client';
 
-    // --- Inisialisasi Supabase (di dalam DOM agar SDK pasti sudah dimuat) ---
+    // Update ID di footer login
+    const idDisplay = document.getElementById('loginClientIdDisplay');
+    if (idDisplay) idDisplay.textContent = CLIENT_ID;
+
+    // --- Inisialisasi Supabase ---
     try {
         if (typeof window.supabase !== 'undefined' && window.supabase.createClient) {
             _supaAdmin = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-            // Tampilkan ID klien aktif di header dashboard
-            const headerTitle = document.querySelector('.admin-header h1');
-            if (headerTitle) headerTitle.textContent = `Dashboard Admin — ${CLIENT_ID}`;
-
-            showToast(`Memuat data klien: ${CLIENT_ID}...`);
-            await fetchCloudData();
+            // Jalankan sistem Autentikasi dulu sebelum load data
+            await initAuthSystem();
         } else {
             console.warn('[ADMIN] Supabase SDK tidak tersedia. Mode offline.');
             showToast('⚠️ Mode Offline (Supabase tidak tersedia)');
+            hideLoginOverlay(); // Bypass if offline for dev
         }
     } catch (e) {
         console.error('[ADMIN] Gagal inisialisasi Supabase:', e.message);
-        showToast('⚠️ Gagal koneksi ke Cloud. Data lokal digunakan.');
+        showToast('⚠️ Gagal koneksi ke Cloud.');
     }
+});
 
-    // --- Update link Preview agar membawa ?id= yang benar ---
+// Fungsi pembantu untuk inisialisasi dashboard setelah login
+async function startDashboard() {
+    // Tampilkan ID klien aktif di header dashboard
+    const headerTitle = document.querySelector('.admin-header h1');
+    if (headerTitle) headerTitle.textContent = `Dashboard Admin — ${CLIENT_ID}`;
+
+    // Update link Preview agar membawa ?id= yang benar
     const previewUrl = `index.html?id=${CLIENT_ID}`;
     const sidebarLink = document.getElementById('sidebarPreviewLink');
     const headerLink = document.getElementById('headerPreviewLink');
@@ -64,10 +70,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     initWishesManagement();
     initGalleryManagement();
     initStoryManagement();
-});
+}
 
 async function fetchCloudData() {
-    if (!_supaAdmin) return;
+    if (!_supaAdmin) return null;
     try {
         const { data, error } = await _supaAdmin
             .from('wedding_invitations')
@@ -80,11 +86,11 @@ async function fetchCloudData() {
             console.warn(`[ADMIN] Klien "${CLIENT_ID}" belum ada. Membuat baris baru...`);
             const { error: insertErr } = await _supaAdmin.from('wedding_invitations').insert({
                 client_id: CLIENT_ID,
-                domain_origin: window.location.origin  // ← Otomatis catat domain
+                domain_origin: window.location.origin
             });
             if (insertErr) console.error('[ADMIN] Gagal insert baris baru:', insertErr);
             else showToast(`✅ Klien "${CLIENT_ID}" berhasil didaftarkan!`);
-            return;
+            return null;
         }
 
         if (!error && data) {
@@ -93,20 +99,110 @@ async function fetchCloudData() {
             localStore.wishes = data.wishes;
             localStore.gallery = data.gallery;
             localStore.story = data.story;
-            showToast('✅ Data berhasil dimuat dari Cloud!');
-
+            
             // Selalu update domain_origin setiap admin dibuka
-            // agar Supabase selalu tahu domain mana yang dipakai klien ini
             _supaAdmin.from('wedding_invitations')
                 .update({ domain_origin: window.location.origin })
                 .eq('client_id', CLIENT_ID)
                 .then(({ error: domErr }) => {
                     if (domErr) console.warn('[ADMIN] Gagal update domain_origin:', domErr.message);
                 });
+
+            return data;
         }
     } catch (err) {
         console.error('[ADMIN] Gagal fetch data:', err);
     }
+    return null;
+}
+
+/* =========================================
+   SECURITY & AUTH SYSTEM
+   ========================================= */
+let cloudDataCache = null;
+
+async function initAuthSystem() {
+    const btnLogin = document.getElementById('btnLoginAdmin');
+    const inputPass = document.getElementById('adminPasswordInput');
+
+    // Cek session cache
+    const sessionKey = `admin_auth_${CLIENT_ID}`;
+    const savedPass = sessionStorage.getItem(sessionKey);
+
+    // Ambil data dari cloud untuk ngecek password
+    showToast('Memuat sistem keamanan...');
+    cloudDataCache = await fetchCloudData();
+
+    if (!cloudDataCache) {
+        // Client baru sekali, suruh bikin password
+        document.getElementById('loginTitle').textContent = 'Setup Dashboard';
+        document.getElementById('loginSubtitle').textContent = 'Klien baru terdeteksi. Silakan tentukan password admin Anda:';
+        document.getElementById('btnLoginAdmin').textContent = 'Simpan & Buka';
+    } else if (cloudDataCache.admin_password && savedPass === cloudDataCache.admin_password) {
+        // Session masih aktif
+        hideLoginOverlay();
+        startDashboard();
+        return;
+    } else if (!cloudDataCache.admin_password) {
+        // Data ada tapi belum punya password
+        document.getElementById('loginTitle').textContent = 'Set Password';
+        document.getElementById('loginSubtitle').textContent = 'Dashboard ini belum memiliki password. Silakan tentukan sekarang:';
+        document.getElementById('btnLoginAdmin').textContent = 'Simpan & Buka';
+    }
+
+    btnLogin.addEventListener('click', handleLogin);
+    inputPass.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') handleLogin();
+    });
+}
+
+async function handleLogin() {
+    const inputPass = document.getElementById('adminPasswordInput');
+    const password = inputPass.value.trim();
+    const sessionKey = `admin_auth_${CLIENT_ID}`;
+
+    if (!password) {
+        showToast('⚠️ Password tidak boleh kosong');
+        return;
+    }
+
+    if (!cloudDataCache || !cloudDataCache.admin_password) {
+        // SETUP BARU
+        showToast('Menyimpan password baru...');
+        const { error } = await _supaAdmin
+            .from('wedding_invitations')
+            .update({ admin_password: password })
+            .eq('client_id', CLIENT_ID);
+
+        if (!error) {
+            sessionStorage.setItem(sessionKey, password);
+            showToast('✅ Password berhasil diset!');
+            hideLoginOverlay();
+            startDashboard();
+        } else {
+            showToast('❌ Gagal menyimpan password');
+        }
+    } else {
+        // LOGIN BIASA
+        if (password === cloudDataCache.admin_password) {
+            sessionStorage.setItem(sessionKey, password);
+            showToast('✅ Login Berhasil!');
+            hideLoginOverlay();
+            startDashboard();
+        } else {
+            showToast('❌ Password Salah!');
+            inputPass.value = '';
+            inputPass.focus();
+        }
+    }
+}
+
+function hideLoginOverlay() {
+    const overlay = document.getElementById('loginOverlay');
+    overlay.classList.add('hidden');
+    setTimeout(() => {
+        overlay.style.display = 'none';
+    }, 600);
 }
 
 /* =========================================
