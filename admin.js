@@ -472,7 +472,33 @@ function populateWeddingForm(s) {
     }
 }
 
+
+// Fungsi untuk auto-fix link audio dari berbagai platform
+function normalizeAudioUrl(url) {
+    if (!url || !url.trim()) return url;
+    let u = url.trim();
+
+    // Dropbox: ganti dl=0 jadi dl=1 agar bisa distream langsung
+    if (u.includes('dropbox.com')) {
+        u = u.replace(/[?&]dl=0/, (match) => match.replace('dl=0', 'dl=1'));
+        // Kalau belum ada dl= sama sekali, tambahkan
+        if (!u.includes('dl=')) {
+            u += (u.includes('?') ? '&' : '?') + 'dl=1';
+        }
+    }
+
+    // Google Drive: ubah link share jadi link direct stream
+    // Format: https://drive.google.com/file/d/FILE_ID/view
+    const driveMatch = u.match(/drive\.google\.com\/file\/d\/([a-zA-Z0-9_-]+)/);
+    if (driveMatch) {
+        u = `https://drive.google.com/uc?export=download&id=${driveMatch[1]}`;
+    }
+
+    return u;
+}
+
 function saveWeddingInfo() {
+    const rawMusicUrl = document.getElementById('wiMusicUrl').value;
     const settings = {
         groomName: document.getElementById('wiGroomName').value,
         groomOrder: document.getElementById('wiGroomOrder').value,
@@ -505,10 +531,14 @@ function saveWeddingInfo() {
         quoteText: document.getElementById('wiQuoteText').value,
         quoteSource: document.getElementById('wiQuoteSource').value,
         hashtag: document.getElementById('wiHashtag').value,
-        musicUrl: document.getElementById('wiMusicUrl').value,
+        musicUrl: normalizeAudioUrl(rawMusicUrl), // Auto-fix link sebelum disimpan
     };
 
     setData(KEYS.SETTINGS, settings);
+
+    // Update field di form dengan URL yang sudah di-fix agar client tau
+    document.getElementById('wiMusicUrl').value = settings.musicUrl;
+
     showToast('✅ Info pernikahan berhasil disimpan!');
 }
 

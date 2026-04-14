@@ -325,6 +325,19 @@ function initCoverButton() {
    ----------------------------------------- */
 let isPlaying = false;
 
+// Auto-fix link audio (Dropbox, Google Drive, dll)
+function normalizeAudioUrl(url) {
+    if (!url || !url.trim()) return url;
+    let u = url.trim();
+    if (u.includes('dropbox.com')) {
+        u = u.replace(/[?&]dl=0/, (match) => match.replace('dl=0', 'dl=1'));
+        if (!u.includes('dl=')) u += (u.includes('?') ? '&' : '?') + 'dl=1';
+    }
+    const driveMatch = u.match(/drive\.google\.com\/file\/d\/([a-zA-Z0-9_-]+)/);
+    if (driveMatch) u = `https://drive.google.com/uc?export=download&id=${driveMatch[1]}`;
+    return u;
+}
+
 function playMusic() {
     const audio = document.getElementById('bgMusic');
     const musicBtn = document.getElementById('musicToggle');
@@ -333,13 +346,12 @@ function playMusic() {
     let settings;
     try { settings = JSON.parse(localStorage.getItem('wedding_settings')); } catch { settings = null; }
 
-    const customUrl = settings && settings.musicUrl && settings.musicUrl.trim().startsWith('http')
-        ? settings.musicUrl.trim()
+    const rawUrl = settings && settings.musicUrl ? settings.musicUrl : null;
+    const customUrl = rawUrl && rawUrl.trim().startsWith('http')
+        ? normalizeAudioUrl(rawUrl)
         : null;
 
     if (customUrl) {
-        // Set src baru — ini otomatis trigger load di belakang layar
-        // JANGAN panggil audio.load() manual, karena itu akan membatalkan play()
         audio.src = customUrl;
     }
 
