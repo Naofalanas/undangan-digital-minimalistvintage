@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Undangan Pernikahan — Arya & Kiara</title>
+    <meta name="description" content="Undangan Pernikahan Arya Pratama & Kiara Azzahra — Sabtu, 20 Juni 2026. Kami mengundang Anda untuk merayakan hari bahagia kami.">
+    <meta name="theme-color" content="#3D3229">
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&family=Great+Vibes&family=Montserrat:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Stylesheet -->
+    <link rel="stylesheet" href="style.css">
+</head>
+<body class="no-scroll">
+
+    <!-- ============================
+         COVER / AMPLOP OVERLAY
+         ============================ -->
+    <div id="cover">
+        <!-- Floating petals will be injected by JS -->
+
+        <div class="cover-content">
+            <div class="cover-ornament">✿ ✿ ✿</div>
+
+            <p class="cover-label">The Wedding of</p>
+            <h1 class="cover-names">Arya & Kiara</h1>
+
+            <div class="cover-divider">
+                <span class="cover-divider-dot"></span>
+            </div>
+
+            <p class="cover-to">Kepada Yth. Bapak/Ibu/Saudara/i</p>
+            <p class="cover-guest" id="guestName">Tamu Undangan</p>
+
+            <button id="openInvitation" class="btn-open" aria-label="Buka Undangan">
+                <span class="btn-open-icon">✉</span>
+                <span>Buka Undangan</span>
+            </button>
+
+            <div class="cover-ornament">✿ ✿ ✿</div>
+        </div>
+    </div>
+
+    <!-- ============================
+         AUDIO (Background Music)
+         ============================ -->
+    <!-- Ganti src dengan file musik kamu (mp3) -->
+    <audio id="bgMusic" loop preload="auto">
+        <source src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3" type="audio/mpeg">
+    </audio>
+
+    <!-- ============================
+         MUSIC TOGGLE BUTTON
+         ============================ -->
+    <button id="musicToggle" class="music-btn" title="Toggle Musik" aria-label="Toggle Musik">
+        <span class="music-icon">♪</span>
+    </button>
+
+    <!-- ============================
+         TOAST NOTIFICATION
+         ============================ -->
+    <div id="toast" class="toast"></div>
+
+    <!-- ============================
+         MAIN CONTENT
+         ============================ -->
+    <main id="mainContent">
+
+        <!-- ========================
+             HERO SECTION
+             ======================== -->
+        <section id="home" class="section hero-section">
+            <div class="hero-content reveal">
+                <p class="hero-label">The Wedding of</p>
+
+                <div class="hero-names-wrapper">
+                    <span class="hero-name">Arya</span>
+                    <span class="hero-ampersand">&</span>
+                    <span class="hero-name">Kiara</span>
+                </div>
+
+                <div class="hero-ornament">
+                    <span class="hero-ornament-leaf">🌿</span>
+                </div>
+
+                <p class="hero-date">Sabtu, 20 Juni 2026</p>
+            </div>
+
+            <div class="hero-scroll-hint">
+                Geser / Scroll ➡
+                <span style="background: linear-gradient(to right, var(--color-accent), transparent); width: 24px; height: 1px; margin-top: 8px;"></span>
+            </div>
+        </section>
+
+        <!-- ========================
+             QUOTE / AYAT
+             ======================== -->
+        <section id="quote" class="section quote-section">
+            <div class="container">
+                <div class="reveal">
+                    <span class="quote-icon">❝</span>
+                    <blockquote>
+                        "Dan di antara tanda-tanda kekuasaan-Nya ialah Dia menciptakan
+                        untukmu pasangan hidup dari jenismu sendiri, supaya kamu merasa
+                        tenteram kepadanya, dan dijadikan-Nya di antaramu rasa kasih dan sayang."
+                    </blockquote>
+                    <cite>— QS. Ar-Rum: 21</cite>
+                </div>
+            </div>
+        </section>
+
+        <!-- ========================
+             COUNTDOWN
+             ======================== -->
+        <section id="countdown" class="section countdown-section">
+            <div class="container">
+                <h3 class="section-title reveal">Menghitung Hari</h3>
+                <div class="section-ornament reveal">
+                    <span class="section-ornament-icon">✦</span>
+                </div>
+
+                <div class="countdown-grid reveal">
+                    <div class="countdown-item">
+                        <span id="countDays" class="countdown-number">00</span>
+                        <span class="countdown-label">Hari</span>
+                    </div>
+                    <div class="countdown-item">
+                        <span id="countHours" class="countdown-number">00</span>
+                        <span class="countdown-label">Jam</span>
+                    </div>
+                    <div class="countdown-item">
+                        <span id="countMinutes" class="countdown-number">00</span>
+                        <span class="countdown-label">Menit</span>
+                    </div>
+                    <div class="countdown-item">
+                        <span id="countSeconds" class="countdown-number">00</span>
+                        <span class="countdown-label">Detik</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ========================
+             COUPLE / MEMPELAI
+             ======================== -->
+        <section id="couple" class="section couple-section">
+            <div class="container">
+                <h3 class="section-title reveal">Mempelai</h3>
+                <div class="section-ornament reveal">
+                    <span class="section-ornament-icon">✦</span>
+                </div>
+
+                <div class="couple-grid">
+                    <!-- Groom -->
+                    <div class="couple-card reveal">
+                        <div class="couple-photo">
+                            <img src="assets/img/groom.png" alt="Mempelai Pria - Arya Pratama">
+                        </div>
+                        <h4>Arya Pratama, S.T.</h4>
+                        <p>
+                            Putra pertama dari<br>
+                            Bapak Surya Pratama<br>
+                            & Ibu Ratna Dewi
+                        </p>
+                        <div class="couple-social">
+                            <a href="#" aria-label="Instagram Arya">@aryapratama</a>
+                        </div>
+                    </div>
+
+                    <!-- Separator -->
+                    <div class="couple-separator reveal">
+                        <span class="ampersand-large">&</span>
+                    </div>
+
+                    <!-- Bride -->
+                    <div class="couple-card reveal">
+                        <div class="couple-photo">
+                            <img src="assets/img/bride.png" alt="Mempelai Wanita - Kiara Azzahra">
+                        </div>
+                        <h4>Kiara Azzahra, S.Pd.</h4>
+                        <p>
+                            Putri kedua dari<br>
+                            Bapak Fajar Hidayat<br>
+                            & Ibu Sari Wulandari
+                        </p>
+                        <div class="couple-social">
+                            <a href="#" aria-label="Instagram Kiara">@kiaraazzahra</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ========================
+             LOVE STORY (Luxury)
+             ======================== -->
+        <section id="loveStory" class="section story-section">
+            <div class="container">
+                <h3 class="section-title reveal">Cerita Cinta</h3>
+                <div class="section-ornament reveal">
+                    <span class="section-ornament-icon">✦</span>
+                </div>
+
+                <div class="story-timeline" id="storyTimeline">
+                    <!-- Milestones akan dimuat oleh JS -->
+                    <div class="story-item reveal">
+                        <div class="story-date">2020</div>
+                        <div class="story-content">
+                            <h4>Pertama Bertemu</h4>
+                            <p>Takdir mempertemukan kami di sebuah perpustakaan kota. Percakapan singkat tentang buku menjadi awal dari segalanya.</p>
+                        </div>
+                    </div>
+                    <div class="story-item reveal">
+                        <div class="story-date">2022</div>
+                        <div class="story-content">
+                            <h4>Menjalin Kasih</h4>
+                            <p>Setelah sekian lama berbagi tawa dan duka sebagai teman, kami memutuskan untuk melangkah lebih jauh.</p>
+                        </div>
+                    </div>
+                    <div class="story-item reveal">
+                        <div class="story-date">2025</div>
+                        <div class="story-content">
+                            <h4>Lamaran</h4>
+                            <p>Di hadapan keluarga besar, kami mengikat janji suci untuk melangkah ke jenjang pernikahan.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ========================
+             EVENT / WAKTU & TEMPAT
+             ======================== -->
+        <section id="event" class="section event-section">
+            <div class="container">
+                <h3 class="section-title reveal">Waktu & Tempat</h3>
+                <div class="section-ornament reveal">
+                    <span class="section-ornament-icon">✦</span>
+                </div>
+
+                <div class="event-grid">
+                    <!-- Akad Nikah -->
+                    <div class="event-card reveal">
+                        <div class="event-icon">💍</div>
+                        <h4>Akad Nikah</h4>
+                        <div class="event-divider"></div>
+                        <p class="event-date">Sabtu, 20 Juni 2026</p>
+                        <p class="event-time">08:00 — 10:00 WIB</p>
+                        <p class="event-venue">Masjid Istiqlal</p>
+                        <p class="event-address">Jl. Taman Wijaya Kusuma,<br>Jakarta Pusat</p>
+                        <div class="event-btns">
+                            <a href="https://maps.google.com" target="_blank" rel="noopener noreferrer" class="btn-map" id="btnMapAkad">
+                                📍 Lihat Lokasi
+                            </a>
+                        </div>
+                    </div>
+
+                    <!-- Resepsi -->
+                    <div class="event-card reveal reveal-delay-2">
+                        <div class="event-icon">🎉</div>
+                        <h4>Resepsi</h4>
+                        <div class="event-divider"></div>
+                        <p class="event-date">Sabtu, 20 Juni 2026</p>
+                        <p class="event-time">11:00 — 14:00 WIB</p>
+                        <p class="event-venue">Hotel Grand Ballroom</p>
+                        <p class="event-address">Jl. Sudirman No. 88,<br>Jakarta Selatan</p>
+                        <div class="event-btns">
+                            <a href="https://maps.google.com" target="_blank" rel="noopener noreferrer" class="btn-map" id="btnMapResepsi">
+                                📍 Lihat Lokasi
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ========================
+             GALLERY
+             ======================== -->
+        <section id="gallery" class="section gallery-section">
+            <div class="container">
+                <h3 class="section-title reveal">Galeri Kami</h3>
+                <div class="section-ornament reveal">
+                    <span class="section-ornament-icon">✦</span>
+                </div>
+
+                <div class="gallery-grid reveal">
+                    <div class="gallery-item">
+                        <img src="assets/img/gallery-1.png" alt="Wedding Details" loading="lazy">
+                    </div>
+                    <div class="gallery-item">
+                        <img src="assets/img/gallery-2.png" alt="Wedding Venue" loading="lazy">
+                    </div>
+                    <div class="gallery-item">
+                        <img src="assets/img/gallery-3.png" alt="Wedding Couple" loading="lazy">
+                    </div>
+                    <div class="gallery-item">
+                        <img src="assets/img/gallery-4.png" alt="Wedding Bouquet" loading="lazy">
+                    </div>
+                    <div class="gallery-item">
+                        <img src="assets/img/groom.png" alt="The Groom" loading="lazy">
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ========================
+             RSVP / KONFIRMASI KEHADIRAN
+             ======================== -->
+        <section id="rsvp" class="section rsvp-section">
+            <div class="container">
+                <h3 class="section-title reveal">Konfirmasi Kehadiran</h3>
+                <div class="section-ornament reveal">
+                    <span class="section-ornament-icon">✦</span>
+                </div>
+
+                <form id="rsvpForm" class="rsvp-form reveal" autocomplete="off">
+                    <div class="form-group">
+                        <label for="rsvpName">Nama Lengkap</label>
+                        <input type="text" id="rsvpName" placeholder="Masukkan nama lengkap" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="rsvpAttendance">Konfirmasi Kehadiran</label>
+                        <select id="rsvpAttendance" required>
+                            <option value="">— Pilih —</option>
+                            <option value="hadir">✓ Hadir</option>
+                            <option value="tidak">✗ Tidak Hadir</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="rsvpGuests">Jumlah Tamu</label>
+                        <select id="rsvpGuests">
+                            <option value="1">1 Orang</option>
+                            <option value="2">2 Orang</option>
+                            <option value="3">3 Orang</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="rsvpMessage">Ucapan & Doa</label>
+                        <textarea id="rsvpMessage" rows="4" placeholder="Tulis ucapan & doa untuk kedua mempelai..."></textarea>
+                    </div>
+
+                    <button type="submit" class="btn-submit" id="btnSubmitRsvp">Kirim Ucapan</button>
+                </form>
+            </div>
+        </section>
+
+        <!-- ========================
+             WISHES WALL / UCAPAN & DOA
+             ======================== -->
+        <section id="wishes" class="section wishes-section">
+            <div class="container">
+                <h3 class="section-title reveal">Ucapan & Doa</h3>
+                <div class="section-ornament reveal">
+                    <span class="section-ornament-icon">✦</span>
+                </div>
+
+                <div id="wishesWall" class="wishes-grid reveal">
+                    <!-- Wishes akan dimuat oleh JavaScript -->
+                </div>
+            </div>
+        </section>
+
+        <!-- ========================
+             GIFT / AMPLOP DIGITAL
+             ======================== -->
+        <section id="gift" class="section gift-section">
+            <div class="container">
+                <h3 class="section-title reveal">Amplop Digital</h3>
+                <div class="section-ornament reveal">
+                    <span class="section-ornament-icon">✦</span>
+                </div>
+
+                <p class="gift-subtitle reveal">
+                    Doa restu Anda merupakan karunia yang sangat berarti bagi kami.
+                    Namun jika Anda ingin memberikan tanda kasih, dapat melalui:
+                </p>
+
+                <div class="gift-grid reveal">
+                    <div class="gift-card">
+                        <p class="gift-bank">Bank BCA</p>
+                        <p class="gift-number">1234567890</p>
+                        <p class="gift-name">a.n. Arya Pratama</p>
+                        <button class="btn-copy" data-copy="1234567890" id="btnCopyBca">📋 Salin</button>
+                    </div>
+
+                    <div class="gift-card">
+                        <p class="gift-bank">Bank BNI</p>
+                        <p class="gift-number">0987654321</p>
+                        <p class="gift-name">a.n. Kiara Azzahra</p>
+                        <button class="btn-copy" data-copy="0987654321" id="btnCopyBni">📋 Salin</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+
+
+        <!-- ========================
+             FOOTER
+             ======================== -->
+        <footer id="footer" class="section footer-section">
+            <div class="container reveal">
+                <div class="footer-ornament">✿ ✿ ✿</div>
+
+                <p class="footer-text">
+                    Merupakan suatu kehormatan dan kebahagiaan bagi kami
+                    apabila Bapak/Ibu/Saudara/i berkenan hadir
+                    untuk memberikan doa restu.
+                </p>
+
+                <h3 class="footer-names">Arya & Kiara</h3>
+                <p class="footer-hashtag">#AryaKiara2026</p>
+
+                <div class="footer-ornament">✿ ✿ ✿</div>
+
+                <p class="footer-credit">Made with ❤️</p>
+            </div>
+        </footer>
+
+    </main>
+
+    <!-- ============================
+         LIGHTBOX (Luxury Overlay)
+         ============================ -->
+    <div id="lightbox" class="lightbox">
+        <span class="lightbox-close">&times;</span>
+        <img class="lightbox-content" id="lightboxImg">
+        <div id="lightboxCaption"></div>
+    </div>
+
+    <!-- JavaScript -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="script.js"></script>
+</body>
+</html>
