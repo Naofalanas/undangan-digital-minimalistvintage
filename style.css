@@ -1683,4 +1683,68 @@ a {
     .story-item::before {
         left: -21px;
     }
+} /* Close the @media (max-width: 480px) query */
+
+/* Agency Promo Styles */
+.footer-credit {
+    font-size: 0.9em;
+    opacity: 0.8;
+    margin: 0;
+}
+
+.agency-link {
+    font-family: var(--font-serif);
+    font-weight: 600;
+    color: var(--color-accent);
+    text-decoration: none;
+    transition: opacity 0.3s;
+}
+
+.agency-link:hover {
+    opacity: 0.7;
+}
+
+.agency-socials {
+    margin-top: 4px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.agency-ig-link {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.85em;
+    font-family: var(--font-sans);
+    font-weight: 500;
+    color: var(--color-text);
+    text-decoration: none;
+    transition: color 0.3s;
+    opacity: 0.8;
+}
+
+.agency-ig-link:hover {
+    color: var(--color-accent);
+    opacity: 1;
+}
+
+.agency-promo-btn {
+    display: inline-block;
+    margin-top: 16px;
+    padding: 8px 16px;
+    background: rgba(144, 155, 128, 0.15); /* Subtle accent background */
+    border: 1px solid var(--color-accent);
+    border-radius: 24px;
+    color: var(--color-accent);
+    font-size: 0.85em;
+    font-weight: 500;
+    text-decoration: none;
+    transition: all 0.3s ease;
+}
+
+.agency-promo-btn:hover {
+    background: var(--color-accent);
+    color: var(--bg-primary);
+    transform: translateY(-2px);
 }
