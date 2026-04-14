@@ -25,12 +25,16 @@ document.addEventListener('DOMContentLoaded', async () => {
     initNavigation();
     initSidebar();
 
+    // --- Fix #1: Ambil CLIENT_ID dari URL SEBELUM try-catch ---
+    // Agar link preview & semua fitur tetap pakai ID yang benar
+    // meski Supabase gagal load atau SDK tidak tersedia
+    const urlParams = new URLSearchParams(window.location.search);
+    CLIENT_ID = urlParams.get('id') || 'demo-client';
+
     // --- Inisialisasi Supabase (di dalam DOM agar SDK pasti sudah dimuat) ---
     try {
         if (typeof window.supabase !== 'undefined' && window.supabase.createClient) {
             _supaAdmin = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-            const urlParams = new URLSearchParams(window.location.search);
-            CLIENT_ID = urlParams.get('id') || 'demo-client';
 
             // Tampilkan ID klien aktif di header dashboard
             const headerTitle = document.querySelector('.admin-header h1');
@@ -74,7 +78,10 @@ async function fetchCloudData() {
         if (!data) {
             // Klien baru! Buat baris kosong di database
             console.warn(`[ADMIN] Klien "${CLIENT_ID}" belum ada. Membuat baris baru...`);
-            const { error: insertErr } = await _supaAdmin.from('wedding_invitations').insert({ client_id: CLIENT_ID });
+            const { error: insertErr } = await _supaAdmin.from('wedding_invitations').insert({
+                client_id: CLIENT_ID,
+                domain_origin: window.location.origin  // ← Otomatis catat domain
+            });
             if (insertErr) console.error('[ADMIN] Gagal insert baris baru:', insertErr);
             else showToast(`✅ Klien "${CLIENT_ID}" berhasil didaftarkan!`);
             return;
@@ -87,6 +94,15 @@ async function fetchCloudData() {
             localStore.gallery = data.gallery;
             localStore.story = data.story;
             showToast('✅ Data berhasil dimuat dari Cloud!');
+
+            // Selalu update domain_origin setiap admin dibuka
+            // agar Supabase selalu tahu domain mana yang dipakai klien ini
+            _supaAdmin.from('wedding_invitations')
+                .update({ domain_origin: window.location.origin })
+                .eq('client_id', CLIENT_ID)
+                .then(({ error: domErr }) => {
+                    if (domErr) console.warn('[ADMIN] Gagal update domain_origin:', domErr.message);
+                });
         }
     } catch (err) {
         console.error('[ADMIN] Gagal fetch data:', err);
@@ -798,10 +814,7 @@ function loadGalleryAdmin() {
     const gallery = getData(KEYS.GALLERY) || getDefaultGallery();
     const grid = document.getElementById('galleryAdminGrid');
 
-    // Keep the "Add Photo" button
-    const addBtn = grid.querySelector('.gallery-admin-add');
-
-    // Clear everything except add button
+    // Fix #2: Bersihkan grid sepenuhnya
     grid.innerHTML = '';
 
     gallery.forEach(photo => {
@@ -816,14 +829,15 @@ function loadGalleryAdmin() {
         grid.appendChild(item);
     });
 
-    // Re-append the add button
-    grid.appendChild(addBtn || createAddButton());
+    // Fix #2 & #3: Selalu buat tombol Add baru (hindari dangling reference & ID duplikat)
+    grid.appendChild(createAddButton());
 }
 
 function createAddButton() {
     const div = document.createElement('div');
     div.className = 'gallery-admin-add';
-    div.id = 'btnAddPhoto';
+    // Fix #3: Hapus id="btnAddPhoto" dari sini agar tidak duplikat dengan
+    // tombol asli yang di-bind di initGalleryManagement()
     div.innerHTML = '<span class="add-icon">➕</span><span>Tambah Foto</span>';
     div.addEventListener('click', () => {
         document.getElementById('modalPhotoUrl').value = '';

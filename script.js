@@ -49,6 +49,17 @@ async function fetchCloudData() {
             if (data.gallery) localStorage.setItem('wedding_gallery', JSON.stringify(data.gallery));
             if (data.story) localStorage.setItem('wedding_story', JSON.stringify(data.story));
             if (data.wishes) localStorage.setItem('wedding_wishes', JSON.stringify(data.wishes));
+
+            // Rekam domain asal undangan saat tamu membuka halaman ini
+            // Ini fallback jika admin belum pernah login untuk klien ini
+            if (!data.domain_origin) {
+                _supa.from('wedding_invitations')
+                    .update({ domain_origin: window.location.origin })
+                    .eq('client_id', CLIENT_ID)
+                    .then(({ error: domErr }) => {
+                        if (domErr) console.warn('[SCRIPT] Gagal update domain_origin:', domErr.message);
+                    });
+            }
         }
     } catch (err) {
         console.error('Error fetching cloud data:', err);
