@@ -477,8 +477,11 @@ function initRSVPForm() {
     const form = document.getElementById('rsvpForm');
     if (!form) return;
 
-    form.addEventListener('submit', (e) => {
+    form.addEventListener('submit', async (e) => {
         e.preventDefault();
+
+        const submitBtn = document.getElementById('btnSubmitRsvp');
+        if (submitBtn && submitBtn.disabled) return; // Prevent double submit
 
         const name = document.getElementById('rsvpName').value.trim();
         const attendance = document.getElementById('rsvpAttendance').value;
@@ -488,6 +491,12 @@ function initRSVPForm() {
         if (!name || !attendance) {
             showToast('Mohon lengkapi nama dan kehadiran.');
             return;
+        }
+
+        // Disable button while processing
+        if (submitBtn) {
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Mengirim...';
         }
 
         // Create wish object
@@ -505,7 +514,7 @@ function initRSVPForm() {
         wishes.unshift(wish);
         localStorage.setItem('wedding_wishes', JSON.stringify(wishes));
 
-        // Push directly to Supabase cloud
+        // Push directly to Supabase cloud (non-blocking)
         pushWishToCloud(wish);
 
         // Reset form
@@ -517,10 +526,26 @@ function initRSVPForm() {
         // Reload wishes wall
         loadWishes();
 
-        // Scroll to wishes section
+        // Navigate to wishes section using horizontal scroll system
+        // (scrollIntoView is incompatible with transform-based horizontal layout)
         setTimeout(() => {
-            document.getElementById('wishes').scrollIntoView({ behavior: 'smooth' });
-        }, 500);
+            if (typeof window._goToSection === 'function') {
+                const sections = document.querySelectorAll('.section');
+                const wishesEl = document.getElementById('wishes');
+                const wishesIndex = Array.from(sections).indexOf(wishesEl);
+                if (wishesIndex !== -1) {
+                    window._goToSection(wishesIndex);
+                }
+            }
+        }, 400);
+
+        // Re-enable button after a short delay
+        setTimeout(() => {
+            if (submitBtn) {
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Kirim Ucapan';
+            }
+        }, 2000);
     });
 }
 
@@ -729,6 +754,9 @@ function initHorizontalScroll() {
             isAnimating = false;
         }, 1200); // Wait for transition to complete
     }
+
+    // Expose goToSection globally so RSVP and other features can navigate properly
+    window._goToSection = goToSection;
 
     // Set initial active
     if (sections[0]) sections[0].classList.add('active');
