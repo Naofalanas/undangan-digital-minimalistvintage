@@ -790,63 +790,87 @@ function initHorizontalScroll() {
 
         if (isInternalScrollArea) return;
 
-        if (evt.deltaY != 0) {
+        if (evt.deltaY != 0 || evt.deltaX != 0) {
             evt.preventDefault();
             if (isAnimating) return;
 
-            const direction = evt.deltaY > 0 ? 1 : -1;
+            const isHorizontal = Math.abs(evt.deltaX) > Math.abs(evt.deltaY);
+            const delta = isHorizontal ? evt.deltaX : evt.deltaY;
+            const direction = delta > 0 ? 1 : -1;
             goToSection(currentIndex + direction);
         }
     }, { passive: false });
 
     // For mobile
+    let touchStartX = 0;
     let touchStartY = 0;
+
     window.addEventListener('touchstart', (evt) => {
+        touchStartX = evt.touches[0].clientX;
         touchStartY = evt.touches[0].clientY;
     }, { passive: true });
 
     window.addEventListener('touchmove', (evt) => {
         if (document.body.classList.contains('no-scroll')) return;
 
+        const touchEndX = evt.touches[0].clientX;
+        const touchEndY = evt.touches[0].clientY;
+        const deltaX = touchStartX - touchEndX;
+        const deltaY = touchStartY - touchEndY;
+
+        // Determine swipe direction
+        const isHorizontal = Math.abs(deltaX) > Math.abs(deltaY);
+
         let isInternalScrollArea = false;
         let container = evt.target;
         
         // Find nearest scrollable parent
         while (container && container !== document.body && container !== document.documentElement) {
+            // Check vertical scroll
             if (container.scrollHeight > container.clientHeight) {
                 const style = window.getComputedStyle(container);
                 if (style.overflowY === 'auto' || style.overflowY === 'scroll') {
-                    break;
+                    // Only lock if we are swiping vertically and not at boundaries
+                    if (!isHorizontal) {
+                        const isAtTop = container.scrollTop === 0;
+                        const isAtBottom = Math.abs(container.scrollHeight - container.scrollTop - container.clientHeight) < 2;
+                        if (!((isAtTop && deltaY < 0) || (isAtBottom && deltaY > 0))) {
+                            isInternalScrollArea = true;
+                            break;
+                        }
+                    }
+                }
+            }
+            // Check horizontal scroll (if any internal area has it)
+            if (container.scrollWidth > container.clientWidth) {
+                const style = window.getComputedStyle(container);
+                if (style.overflowX === 'auto' || style.overflowX === 'scroll') {
+                    if (isHorizontal) {
+                        const isAtLeft = container.scrollLeft === 0;
+                        const isAtRight = Math.abs(container.scrollWidth - container.scrollLeft - container.clientWidth) < 2;
+                        if (!((isAtLeft && deltaX < 0) || (isAtRight && deltaX > 0))) {
+                            isInternalScrollArea = true;
+                            break;
+                        }
+                    }
                 }
             }
             container = container.parentElement;
         }
 
-        if (container && container !== document.body && container !== document.documentElement) {
-            isInternalScrollArea = true;
-            const isAtTop = container.scrollTop === 0;
-            const isAtBottom = Math.abs(container.scrollHeight - container.scrollTop - container.clientHeight) < 2;
-            
-            const touchEndY = evt.touches[0].clientY;
-            const deltaY = touchStartY - touchEndY;
-            
-            if ((isAtTop && deltaY < 0) || (isAtBottom && deltaY > 0)) {
-                isInternalScrollArea = false;
-            }
-        }
-        
         if (isInternalScrollArea) return;
 
-        const touchEndY = evt.touches[0].clientY;
-        const deltaY = touchStartY - touchEndY;
-
-        if (Math.abs(deltaY) > 40) {
+        // Trigger transition if threshold exceeded
+        const threshold = 50; 
+        if (Math.abs(isHorizontal ? deltaX : deltaY) > threshold) {
             evt.preventDefault();
             if (isAnimating) return;
-            const direction = deltaY > 0 ? 1 : -1;
+            
+            const direction = (isHorizontal ? deltaX : deltaY) > 0 ? 1 : -1;
             goToSection(currentIndex + direction);
             
-            // reset to avoid double firing
+            // Reset start position to avoid multi-firing
+            touchStartX = touchEndX;
             touchStartY = touchEndY; 
         }
     }, { passive: false });
